@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Binary Image Quiz</title>
+<style>
+  img { width: 300px; display: block; margin-bottom: 10px; }
+  .btn { padding: 10px 20px; margin: 5px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h2>Binary Image Quiz</h2>
+
+<label>Enter your name:</label>
+<input type="text" id="username" />
+<button onclick="startQuiz()">Start Quiz</button>
+
+<div id="quizArea" style="display:none"></div>
+<p id="feedback"></p>
+
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbxP_attZe7srOD09bpeyV8H0N2vjg0tfZ5IjGuvKIVrl4FN5wJ4deuCNOR3VQzYR8pt/exec";
+
+// Generate questions for images 0000.jpg to 1111.jpg
+const questions = [
+  { image: "1110.png", options: ["Option A", "Option B"], answer: 0 },
+  { image: "1010.png", options: ["Option A", "Option B"], answer: 0 },
+  { image: "1011.png", options: ["Option A", "Option B"], answer: 0 },
+  { image: "1101.png", options: ["Option A", "Option B"], answer: 0 },
+  { image: "0111.png", options: ["Option A", "Option B"], answer: 0 },
+
+
+  { image: "1100.png", options: ["Option A", "Option B"], answer: 1 },
+  { image: "0110.png", options: ["Option A", "Option B"], answer: 1 },
+  { image: "0001.png", options: ["Option A", "Option B"], answer: 1 },
+  { image: "0000.png", options: ["Option A", "Option B"], answer: 1 },
+
+
+
+
+];
+
+let order = [];
+let index = 0;
+let username = "";
+
+// Shuffle utility
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function startQuiz() {
+  username = document.getElementById("username").value.trim();
+  if (!username) { alert("Enter your name first."); return; }
+  
+  // Shuffle questions every attempt
+  order = shuffleArray([...questions]);
+  index = 0;
+
+  document.getElementById("quizArea").style.display = "block";
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const q = order[index];
+  document.getElementById("quizArea").innerHTML = `
+    <img src="${q.image}">
+    <button class="btn" onclick="submitAnswer(0)">${q.options[0]}</button>
+    <button class="btn" onclick="submitAnswer(1)">${q.options[1]}</button>
+  `;
+}
+
+function submitAnswer(choice) {
+  const q = order[index];
+  const result = (choice === q.answer) ? "Correct" : "Incorrect";
+
+  document.getElementById("feedback").textContent =
+    result === "Correct" ? "✅ Correct!" : "❌ Incorrect";
+
+  // Send response to Google Sheets
+  fetch(scriptURL, {
+    method: "POST",
+    body: JSON.stringify({
+      name: username,
+      question: q.image,
+      selected: q.options[choice],
+      correctAnswer: q.options[q.answer],
+      result: result
+    })
+  });
+
+  setTimeout(() => {
+    index++;
+    document.getElementById("feedback").textContent = "";
+    if (index < order.length) {
+      loadQuestion();
+    } else {
+      document.getElementById("quizArea").innerHTML = "<h3>Quiz Complete — take again anytime!</h3>";
+    }
+  }, 800);
+}
+</script>
+
+</body>
+</html>
